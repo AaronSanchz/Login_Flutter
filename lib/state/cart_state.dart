@@ -1,0 +1,15 @@
+class CartState {
+  CartState._();
+
+  static final List<int> _productIds = [];
+
+  static int get count => _productIds.length;
+
+  static void add(int productId) {
+    _productIds.add(productId);
+  }
+
+  static void clear() {
+    _productIds.clear();
+  }
+}

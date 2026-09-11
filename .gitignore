@@ -1,0 +1,14 @@
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+android/.gradle/
+android/local.properties
+android/.gradle-local/
+
+.idea/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+**/build/

@@ -1,0 +1,29 @@
+# Android Studio
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+**/build/
+
+# Kotlin
+.kotlin/
+
+# Configuracion local
+local.properties
+
+# Cache
+.cache/
+
+# Android
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Archivos compilados
+*.apk
+*.aab
+
+# Sistema
+.DS_Store
+Thumbs.db
