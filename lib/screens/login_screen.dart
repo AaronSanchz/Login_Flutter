@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
+import 'catalog_screen.dart';
 
 import '../models/session_data.dart';
 import '../services/api_service.dart';
 import '../services/session_service.dart';
-import 'admin_screen.dart';
-import 'auditor_screen.dart';
-import 'client_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,21 +28,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _destination(SessionData session) {
-    switch (session.role) {
-      case UserRole.administrador:
-        return AdminScreen(session: session);
-      case UserRole.auditor:
-        return AuditorScreen(session: session);
-      case UserRole.cliente:
-        return ClientScreen(session: session);
-    }
+    return CatalogScreen(session: session);
   }
 
   Future<void> _login() async {
+    if (_loading) return;
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
+    if (username.isEmpty || password.trim().isEmpty) {
       setState(() => _message = 'Completa el usuario y la contraseña.');
       return;
     }
@@ -104,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        'Login y asignación local de perfiles',
+                        'Explora el catálogo con tu cuenta',
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
@@ -136,7 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Text('Iniciar sesión'),
                       ),

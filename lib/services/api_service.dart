@@ -37,6 +37,12 @@ class ApiService {
   }
 
   Future<SessionData> authenticate(String username, String password) async {
+    if (username.trim().isEmpty ||
+        password.trim().isEmpty ||
+        username.length > 100 ||
+        password.length > 256) {
+      throw ApiException('Revisa el usuario y la contraseña.');
+    }
     if (!await hasInternetConnection()) {
       throw ApiException('No hay conexión a Internet.');
     }
@@ -46,7 +52,8 @@ class ApiService {
 
     Map<String, dynamic>? currentUser;
     for (final user in users) {
-      if (user['username']?.toString().toLowerCase() == username.toLowerCase()) {
+      if (user['username']?.toString().toLowerCase() ==
+          username.toLowerCase()) {
         currentUser = user;
         break;
       }
@@ -58,7 +65,7 @@ class ApiService {
 
     final id = currentUser['id'];
     final userId = id is int ? id : int.tryParse(id.toString());
-    if (userId == null) {
+    if (userId == null || userId <= 0) {
       throw ApiException('El usuario no tiene un ID válido.');
     }
 
@@ -86,19 +93,22 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic>) {
-          final token = data['token']?.toString() ?? '';
+          final rawToken = data['token'];
+          final token = rawToken is String ? rawToken.trim() : '';
           if (token.isNotEmpty) {
             return token;
           }
         }
-        throw ApiException('La API respondió, pero no devolvió un token válido.');
+        throw ApiException(
+            'La API respondió, pero no devolvió un token válido.');
       }
 
       if (response.statusCode == 400 || response.statusCode == 401) {
         throw ApiException('Usuario o contraseña inválidos.');
       }
 
-      throw ApiException('No se pudo iniciar sesión. Error ${response.statusCode}.');
+      throw ApiException(
+          'No se pudo iniciar sesión. Error ${response.statusCode}.');
     } on SocketException {
       throw ApiException('No hay conexión a Internet.');
     } on FormatException {
@@ -135,34 +145,6 @@ class ApiService {
       rethrow;
     } catch (_) {
       throw ApiException('Error al consultar los usuarios.');
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getProducts() async {
-    try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/products'))
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException('No se pudieron cargar los productos.');
-      }
-
-      final data = jsonDecode(response.body);
-      if (data is! List) {
-        throw ApiException('La lista de productos no tiene un formato válido.');
-      }
-
-      return data
-          .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-    } on SocketException {
-      throw ApiException('No hay conexión a Internet.');
-    } on ApiException {
-      rethrow;
-    } catch (_) {
-      throw ApiException('Error al consultar los productos.');
     }
   }
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'screens/catalog_screen.dart';
 
 import 'models/session_data.dart';
-import 'screens/admin_screen.dart';
-import 'screens/auditor_screen.dart';
-import 'screens/client_screen.dart';
+
 import 'screens/login_screen.dart';
 import 'services/session_service.dart';
 
@@ -21,8 +20,11 @@ class FakeStoreApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fake Store Roles',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff12685e)),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xfff5f7f6),
+        inputDecorationTheme:
+            const InputDecorationTheme(border: OutlineInputBorder()),
       ),
       home: const SessionGate(),
     );
@@ -33,14 +35,7 @@ class SessionGate extends StatelessWidget {
   const SessionGate({super.key});
 
   Widget _screenFor(SessionData session) {
-    switch (session.role) {
-      case UserRole.administrador:
-        return AdminScreen(session: session);
-      case UserRole.auditor:
-        return AuditorScreen(session: session);
-      case UserRole.cliente:
-        return ClientScreen(session: session);
-    }
+    return CatalogScreen(session: session);
   }
 
   @override

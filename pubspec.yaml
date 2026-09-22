@@ -1,10 +1,11 @@
 name: fake_store_roles
-description: Proyecto Flutter con login, sesión y roles usando Fake Store API.
+description: Fake Store con sesión, roles, catálogo, categorías y detalle de productos.
 publish_to: "none"
-version: 2.0.0+2
+version: 3.0.0+3
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ">=3.13.0 <4.0.0"
+  flutter: ">=3.47.2"
 
 dependencies:
   flutter:

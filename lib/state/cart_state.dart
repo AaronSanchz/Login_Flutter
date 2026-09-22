@@ -6,7 +6,7 @@ class CartState {
   static int get count => _productIds.length;
 
   static void add(int productId) {
-    _productIds.add(productId);
+    if (productId > 0) _productIds.add(productId);
   }
 
   static void clear() {

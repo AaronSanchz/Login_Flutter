@@ -24,9 +24,10 @@ class SessionService {
     final roleText = await _storage.read(key: _roleKey);
 
     if (token == null ||
-        token.isEmpty ||
+        token.trim().isEmpty ||
         idText == null ||
         username == null ||
+        username.trim().isEmpty ||
         roleText == null) {
       return null;
     }
@@ -41,7 +42,7 @@ class SessionService {
       }
     }
 
-    if (userId == null || role == null) {
+    if (userId == null || userId <= 0 || role == null) {
       await clearSession();
       return null;
     }

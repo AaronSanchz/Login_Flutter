@@ -3,7 +3,7 @@
 
     <application
         android:allowBackup="false"
-        android:label="Fake Store Roles"
+        android:label="Fake Store Flutter"
         android:name="${applicationName}">
         <activity
             android:name=".MainActivity"

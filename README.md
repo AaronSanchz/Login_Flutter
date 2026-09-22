@@ -1,30 +1,48 @@
-# Fake Store Roles - Flutter / Dart
+# FakeStore Flutter Dart
 
-Proyecto escolar basado en las historias de usuario US01 y US02.
+Proyecto completo de continuación de Fake Store para US03, US04 y US05. Empieza abriendo **docs/GUIA_COMPLETA.html** en un navegador; contiene requisitos, arquitectura, explicación por archivo y código completo numerado.
 
-## Lo que cumple
-- Comprueba la conectividad antes de intentar el login.
-- Autentica con `POST https://fakestoreapi.com/auth/login`.
-- Después del token consulta `GET /users` para obtener el ID del usuario.
-- Asigna los roles por ID: 1 y 2 Administrador, 3 Auditor, restantes Cliente.
-- Guarda token, ID, username y rol con `flutter_secure_storage`.
-- Restaura una sesión guardada al volver a abrir la app.
-- Cierra sesión eliminando token, ID, username, rol y el estado local del carrito.
-- Al cerrar sesión elimina el historial de navegación para impedir volver a una pantalla protegida con Atrás.
 
-## Usuarios de prueba
-- Administrador (ID 2): `mor_2314` / `83r5^_`
-- Auditor (ID 3): `kevinryan` / `kev02937@`
-- Cliente (ID 4): `donero` / `ewedon`
+## Abrir y ejecutar Flutter
 
-> Nota: `johnd` tiene ID 1, por lo tanto también es Administrador según la regla de negocio de US01.
+Extrae el ZIP en una carpeta local. Abre FakeStore_Flutter_Dart en Android Studio o VS Code. Este proyecto incluye el destino Android, como la base recibida; no incluye carpetas iOS, web o escritorio.
 
-## Cómo ejecutar
-1. Instala Flutter y Android Studio.
-2. Abre esta carpeta en VS Code o Android Studio.
-3. Ejecuta `flutter pub get`.
-4. Ejecuta `flutter run`.
-5. Para generar APK: `flutter build apk --release`.
+Instala Flutter y configura el SDK Android con licencias aceptadas. La entrega se comprobó con Flutter 3.47.2 y Dart 3.13.2. No uses el límite inferior del pubspec como garantía de compatibilidad con SDK antiguos: las dependencias bloqueadas y los widgets usados se comprobaron con esa versión concreta.
 
-## Android
-El proyecto usa Java 17 y `minSdk = 23`.
+```powershell
+flutter doctor
+flutter pub get
+flutter analyze --no-pub
+flutter test --no-pub
+flutter run
+```
+
+Para construir un APK de prueba:
+
+```powershell
+flutter build apk --debug
+```
+
+El resultado se crea en build/app/outputs/flutter-apk/app-debug.apk. No está firmado para publicación en una tienda. Flutter prepara android/local.properties con tus rutas locales; no copies las rutas de otra computadora. Selecciona un dispositivo/emulador Android antes de flutter run. Las dependencias y Gradle se descargan la primera vez.
+
+Configuración Android conservada: AGP 8.11.1, Kotlin 2.2.20, Gradle 8.14 y lenguaje JVM 17. Flutter 3.47.2 advierte que esas versiones requerirán actualización en una versión futura; la advertencia no equivale a un fallo de compilación. El applicationId permanece com.example.fakestoreroles.
+
+## Cuentas de demostración del proyecto base
+
+| Perfil | Usuario | Contraseña |
+|---|---|---|
+| Administrador ID 2 | mor_2314 | 83r5^_ |
+| Auditor ID 3 | kevinryan | kev02937@ |
+| Cliente ID 4 | donero | ewedon |
+
+Son cuentas públicas de ejemplo del código recibido. Su disponibilidad depende del servicio y no se garantiza si cambia la base remota. No se añade un acceso que omita la autenticación cuando la API no está disponible.
+
+## Documentación
+
+- docs/ARQUITECTURA_Y_REQUISITOS.md
+- docs/CODIGO_EXPLICADO.md
+- docs/VERIFICACION.md
+- docs/CAMBIOS_SOBRE_BASE.md
+- docs/historias
+
+Los avisos y límites de Fake Store están descritos en la guía y en las pantallas de gestión.

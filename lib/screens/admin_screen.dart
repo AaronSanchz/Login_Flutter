@@ -92,7 +92,8 @@ class _AdminScreenState extends State<AdminScreen> {
 
                   final users = snapshot.data ?? [];
                   if (users.isEmpty) {
-                    return const Center(child: Text('No hay usuarios para mostrar.'));
+                    return const Center(
+                        child: Text('No hay usuarios para mostrar.'));
                   }
 
                   return ListView.separated(
@@ -104,7 +105,8 @@ class _AdminScreenState extends State<AdminScreen> {
                           ? Map<String, dynamic>.from(user['name'])
                           : <String, dynamic>{};
                       final fullName =
-                          '${name['firstname'] ?? ''} ${name['lastname'] ?? ''}'.trim();
+                          '${name['firstname'] ?? ''} ${name['lastname'] ?? ''}'
+                              .trim();
                       final rawId = user['id'];
                       final id = rawId is int
                           ? rawId
