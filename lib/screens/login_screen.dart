@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'catalog_screen.dart';
 
 import '../models/session_data.dart';
-import '../services/api_service.dart';
-import '../services/session_service.dart';
+import '../state/login_controller.dart';
 
+/// Formulario de acceso y navegación por rol.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -12,18 +12,17 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+/// Conecta los campos de acceso con el controlador y la navegación.
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _api = ApiService();
-
-  bool _loading = false;
-  String _message = '';
+  final _controller = LoginController();
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -32,49 +31,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (_loading) return;
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text;
-
-    if (username.isEmpty || password.trim().isEmpty) {
-      setState(() => _message = 'Completa el usuario y la contraseña.');
-      return;
-    }
-
-    setState(() {
-      _loading = true;
-      _message = '';
-    });
-
-    try {
-      final session = await _api.authenticate(username, password);
-      await SessionService.saveSession(session);
-
-      if (!mounted) return;
-
+    final session = await _controller.submit(
+        _usernameController.text, _passwordController.text);
+    if (!mounted) return;
+    if (session != null) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => _destination(session)),
         (_) => false,
       );
-    } on ApiException catch (e) {
-      if (mounted) {
-        setState(() => _message = e.message);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _message = 'Ocurrió un error al iniciar sesión.');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AnimatedBuilder(animation: _controller, builder: (context, _) => Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -113,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _passwordController,
                         obscureText: true,
                         onSubmitted: (_) {
-                          if (!_loading) _login();
+                          if (!_controller.loading) _login();
                         },
                         decoration: const InputDecoration(
                           labelText: 'Contraseña',
@@ -123,8 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 18),
                       FilledButton(
-                        onPressed: _loading ? null : _login,
-                        child: _loading
+                        onPressed: _controller.loading ? null : _login,
+                        child: _controller.loading
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
@@ -133,10 +104,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               )
                             : const Text('Iniciar sesión'),
                       ),
-                      if (_message.isNotEmpty) ...[
+                      if (_controller.message.isNotEmpty) ...[
                         const SizedBox(height: 14),
                         Text(
-                          _message,
+                          _controller.message,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
@@ -163,6 +134,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

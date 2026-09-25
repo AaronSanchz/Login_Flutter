@@ -2,6 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/session_data.dart';
 
+/// Persistencia segura de la sesión local.
 class SessionService {
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 

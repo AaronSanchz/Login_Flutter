@@ -1,3 +1,4 @@
+/// Estado temporal del carrito.
 class CartState {
   CartState._();
 

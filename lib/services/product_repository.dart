@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import '../models/product.dart';
 import '../models/session_data.dart';
 import 'session_service.dart';
+import 'http_error_mapper.dart';
 
+/// Contrato de productos e implementación HTTP con control de permisos.
 class StoreException implements Exception {
   final String message;
   const StoreException(this.message);
@@ -23,6 +25,7 @@ abstract class ProductRepository {
   void close();
 }
 
+/// Consulta y modifica productos mediante el contrato del repositorio.
 class HttpProductRepository implements ProductRepository {
   final http.Client _client;
   final Future<SessionData?> Function() _session;
@@ -45,12 +48,8 @@ class HttpProductRepository implements ProductRepository {
           .send(request)
           .then(http.Response.fromStream)
           .timeout(const Duration(seconds: 15));
-      if (response.statusCode == 404) {
-        throw const StoreException('Producto no disponible');
-      }
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw const StoreException(
-            'No se pudo completar la consulta. Reintenta.');
+        throw StoreException(HttpErrorMapper.message(response.statusCode));
       }
       if (response.body.trim().isEmpty) {
         throw const StoreException('La API devolvió una respuesta vacía.');

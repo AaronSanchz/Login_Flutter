@@ -9,6 +9,7 @@ import 'admin_screen.dart';
 import 'login_screen.dart';
 import 'product_detail_screen.dart';
 
+/// Catálogo, filtros, carga, errores y selección.
 class CatalogScreen extends StatefulWidget {
   final SessionData session;
   final ProductRepository? repository;
@@ -17,6 +18,7 @@ class CatalogScreen extends StatefulWidget {
   State<CatalogScreen> createState() => _CatalogScreenState();
 }
 
+/// Conecta los controles de catálogo con el controlador y la navegación.
 class _CatalogScreenState extends State<CatalogScreen> {
   late final ProductRepository _repository =
       widget.repository ?? HttpProductRepository();
@@ -53,6 +55,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(title: const Text('Fake Store'), actions: [
+        // Control de usuarios: solo se construye para el administrador.
         if (widget.session.role == UserRole.administrador)
           IconButton(
               tooltip: 'Usuarios',
@@ -61,10 +64,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => AdminScreen(session: widget.session)))),
+        // Actualizar conserva el filtro; el controlador descarta respuestas antiguas.
         IconButton(
             tooltip: 'Actualizar catálogo',
             onPressed: () => _state.load(_state.selected),
             icon: const Icon(Icons.refresh)),
+        // Cerrar sesión borra también el carrito local.
         IconButton(
             tooltip: 'Cerrar sesión',
             onPressed: _logout,
@@ -95,6 +100,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               children: [
                                 const Text(
                                     'No se pudieron cargar las categorías.'),
+                                // Reintento independiente de las categorías.
                                 TextButton(
                                     onPressed: _state.loadCategories,
                                     child: const Text('Reintentar categorías'))
@@ -105,12 +111,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         child: Row(children: [
                           Padding(
                               padding: const EdgeInsets.all(4),
+                              // Ver todos elimina el filtro activo.
                               child: ChoiceChip(
                                   label: const Text('Ver todos'),
                                   selected: _state.selected == null,
                                   onSelected: (_) => _state.load())),
                           ..._state.categories.map((c) => Padding(
                               padding: const EdgeInsets.all(4),
+                              // Cada categoría solicita productos filtrados.
                               child: ChoiceChip(
                                   label: Text(c),
                                   selected: _state.selected == c,
@@ -132,6 +140,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                               Text(_state.error!,
                                                   textAlign: TextAlign.center),
                                               const SizedBox(height: 12),
+                                              // Reintenta la última consulta de productos.
                                               FilledButton(
                                                   onPressed: () => _state
                                                       .load(_state.selected),
@@ -151,6 +160,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                               margin: const EdgeInsets.only(
                                                   bottom: 12),
                                               clipBehavior: Clip.antiAlias,
+                                              // La fila abre el detalle del producto elegido.
                                               child: InkWell(
                                                   onTap: () async {
                                                     final reset = await Navigator.push<
@@ -215,6 +225,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                                                           .role ==
                                                                       UserRole
                                                                           .cliente)
+                                                                    // Agregar solo aparece en el rol cliente.
                                                                     TextButton.icon(
                                                                         onPressed: () {
                                                                           CartState.add(

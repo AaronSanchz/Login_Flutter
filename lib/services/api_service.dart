@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../models/session_data.dart';
+import 'http_error_mapper.dart';
 
+/// Autenticación, consulta de usuarios y errores de acceso.
 class ApiException implements Exception {
   final String message;
   ApiException(this.message);
@@ -13,6 +15,7 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Autentica credenciales, consulta usuarios y asigna roles.
 class ApiService {
   static const String baseUrl = 'https://fakestoreapi.com';
 
@@ -103,12 +106,7 @@ class ApiService {
             'La API respondió, pero no devolvió un token válido.');
       }
 
-      if (response.statusCode == 400 || response.statusCode == 401) {
-        throw ApiException('Usuario o contraseña inválidos.');
-      }
-
-      throw ApiException(
-          'No se pudo iniciar sesión. Error ${response.statusCode}.');
+      throw ApiException(HttpErrorMapper.message(response.statusCode, login: true));
     } on SocketException {
       throw ApiException('No hay conexión a Internet.');
     } on FormatException {

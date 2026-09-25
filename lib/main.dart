@@ -6,11 +6,13 @@ import 'models/session_data.dart';
 import 'screens/login_screen.dart';
 import 'services/session_service.dart';
 
+/// Punto de entrada, tema y pantalla inicial.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const FakeStoreApp());
 }
 
+/// Configura el tema y la puerta de entrada de la aplicación.
 class FakeStoreApp extends StatelessWidget {
   const FakeStoreApp({super.key});
 
@@ -31,6 +33,7 @@ class FakeStoreApp extends StatelessWidget {
   }
 }
 
+/// Decide la pantalla inicial a partir de la sesión guardada.
 class SessionGate extends StatelessWidget {
   const SessionGate({super.key});
 

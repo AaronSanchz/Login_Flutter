@@ -1,3 +1,4 @@
+/// Modelo inmutable de sesión y roles de acceso.
 enum UserRole {
   administrador,
   auditor,
@@ -19,6 +20,7 @@ extension UserRoleText on UserRole {
   String get storageValue => name;
 }
 
+/// Agrupa token, usuario y rol de la sesión autenticada.
 class SessionData {
   final String token;
   final int userId;

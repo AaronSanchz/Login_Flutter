@@ -10,7 +10,9 @@ import 'package:http/testing.dart';
 import 'package:fake_store_roles/models/product.dart';
 import 'package:fake_store_roles/models/session_data.dart';
 import 'package:fake_store_roles/services/product_repository.dart';
+import 'package:fake_store_roles/services/http_error_mapper.dart';
 import 'package:fake_store_roles/state/catalog_controller.dart';
+import 'package:fake_store_roles/state/login_controller.dart';
 import 'package:fake_store_roles/screens/product_detail_screen.dart';
 import 'package:fake_store_roles/screens/catalog_screen.dart';
 
@@ -60,6 +62,13 @@ class FakeRepository implements ProductRepository {
 }
 
 void main() {
+  test('Errores HTTP conservan código y contexto de acceso', () {
+    expect(HttpErrorMapper.message(401, login: true), contains('contraseña'));
+    expect(HttpErrorMapper.message(401), contains('acceso'));
+    for (final code in [400, 403, 404, 408, 429, 500, 503, 504]) {
+      expect(HttpErrorMapper.message(code), contains('$code'));
+    }
+  });
   setUpAll(() async {
     final loader = FontLoader('Roboto');
     loader.addFont(File('test/fonts/roboto-regular.ttf')
@@ -71,6 +80,63 @@ void main() {
         .readAsBytes()
         .then(ByteData.sublistView));
     await icons.load();
+  });
+  test('Controlador de acceso valida límites sin llamar al servicio', () async {
+    var calls = 0;
+    final controller = LoginController(
+      authenticate: (_, __) async {
+        calls++;
+        return session(UserRole.cliente);
+      },
+      saveSession: (_) async {},
+    );
+    expect(await controller.submit(' ', 'secreto'), isNull);
+    expect(await controller.submit('usuario', ' '), isNull);
+    expect(await controller.submit(List.filled(101, 'u').join(), 'secreto'), isNull);
+    expect(await controller.submit('usuario', List.filled(257, 'x').join()), isNull);
+    expect(calls, 0);
+    controller.dispose();
+  });
+
+  test('Controlador de acceso bloquea dobles envíos y guarda una sesión', () async {
+    final pending = Completer<SessionData>();
+    var calls = 0;
+    var saved = 0;
+    final controller = LoginController(
+      authenticate: (user, password) {
+        expect(user, 'usuario');
+        expect(password, 'clave');
+        calls++;
+        return pending.future;
+      },
+      saveSession: (_) async { saved++; },
+    );
+    final first = controller.submit(' usuario ', 'clave');
+    expect(controller.loading, isTrue);
+    expect(await controller.submit('usuario', 'clave'), isNull);
+    pending.complete(session(UserRole.cliente));
+    expect(await first, isNotNull);
+    expect(calls, 1);
+    expect(saved, 1);
+    expect(controller.loading, isFalse);
+    controller.dispose();
+  });
+
+  test('Fallo al guardar sesión no abre la aplicación y permite reintentar', () async {
+    var saves = 0;
+    final controller = LoginController(
+      authenticate: (_, __) async => session(UserRole.auditor),
+      saveSession: (_) async {
+        saves++;
+        if (saves == 1) throw StateError('Almacenamiento no disponible');
+      },
+    );
+    expect(await controller.submit('auditor', 'clave'), isNull);
+    expect(controller.message, isNotEmpty);
+    expect(controller.loading, isFalse);
+    expect(await controller.submit('auditor', 'clave'), isNotNull);
+    expect(saves, 2);
+    controller.dispose();
   });
   test('Mapea todos los campos y rating', () {
     final p = Product.fromJson(raw);

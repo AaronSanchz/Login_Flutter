@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/product_repository.dart';
 
+/// Formulario de edición, validaciones y confirmación simulada.
 class ProductEditScreen extends StatefulWidget {
   final Product product;
   final ProductRepository repository;
@@ -11,6 +12,7 @@ class ProductEditScreen extends StatefulWidget {
   State<ProductEditScreen> createState() => _ProductEditScreenState();
 }
 
+/// Controla carga, guardado y mensajes del formulario.
 class _ProductEditScreenState extends State<ProductEditScreen> {
   final _form = GlobalKey<FormState>();
   late final _title = TextEditingController(text: widget.product.title);
@@ -158,6 +160,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                                             ? 'Selecciona una categoría.'
                                             : null),
                                 if (_categories.isEmpty)
+                                  // Recupera categorías si la primera carga falló.
                                   TextButton(
                                       onPressed:
                                           _saving ? null : _loadCategories,
@@ -173,6 +176,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                                                   .colorScheme
                                                   .error))),
                                 const SizedBox(height: 24),
+                                // Guardar se bloquea durante la petición o sin categorías válidas.
                                 FilledButton(
                                     onPressed: _saving || _categories.isEmpty
                                         ? null

@@ -1,5 +1,7 @@
 # FakeStore Flutter Dart
 
+**Versión reestructurada:** consulta [ARQUITECTURA_Y_PRUEBAS.md](ARQUITECTURA_Y_PRUEBAS.md) para la arquitectura y el código actual. La guía HTML incluida documenta la base anterior.
+
 Proyecto completo de continuación de Fake Store para US03, US04 y US05. Empieza abriendo **docs/GUIA_COMPLETA.html** en un navegador; contiene requisitos, arquitectura, explicación por archivo y código completo numerado.
 
 
@@ -46,3 +48,6 @@ Son cuentas públicas de ejemplo del código recibido. Su disponibilidad depende
 - docs/historias
 
 Los avisos y límites de Fake Store están descritos en la guía y en las pantallas de gestión.
+# Reestructuración POO US03–US05
+
+Consulta [ARQUITECTURA_Y_PRUEBAS.md](ARQUITECTURA_Y_PRUEBAS.md) para la separación de vistas, controladores, modelos, validaciones y servicios, junto con los botones, permisos, códigos HTTP y pruebas ampliadas.

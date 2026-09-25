@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Imagen de producto con sustituto si la URL falla.
 /// Descarga asíncrona con estados de espera y URL rota, sin bloquear la lista.
 class ProductImage extends StatelessWidget {
   final String url, label;

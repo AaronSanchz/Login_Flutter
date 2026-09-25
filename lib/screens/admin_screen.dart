@@ -6,6 +6,7 @@ import '../services/session_service.dart';
 import '../state/cart_state.dart';
 import 'login_screen.dart';
 
+/// Panel de administración y sus controles.
 class AdminScreen extends StatefulWidget {
   final SessionData session;
 
@@ -15,6 +16,7 @@ class AdminScreen extends StatefulWidget {
   State<AdminScreen> createState() => _AdminScreenState();
 }
 
+/// Mantiene el estado visual del panel de administración.
 class _AdminScreenState extends State<AdminScreen> {
   final _api = ApiService();
   late Future<List<Map<String, dynamic>>> _usersFuture;

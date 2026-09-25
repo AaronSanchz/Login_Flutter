@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/product.dart';
 import '../services/product_repository.dart';
 
+/// Estado, filtros y concurrencia del catálogo.
 /// Una solicitud antigua no puede sobrescribir la última selección del usuario.
 class CatalogController extends ChangeNotifier {
   final ProductRepository repository;

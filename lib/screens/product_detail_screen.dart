@@ -6,6 +6,7 @@ import '../services/session_service.dart';
 import '../widgets/product_image.dart';
 import 'product_edit_screen.dart';
 
+/// Detalle y acciones permitidas para cada rol.
 class ProductDetailScreen extends StatefulWidget {
   final int id;
   final ProductRepository repository;
@@ -15,6 +16,7 @@ class ProductDetailScreen extends StatefulWidget {
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
+/// Gestiona la carga del detalle y las acciones visuales.
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Product? _product;
   bool _admin = false, _busy = false;
