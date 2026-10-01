@@ -1,4 +1,8 @@
+// GUÍA DEL ARCHIVO: Estado observable del catálogo. load limpia filas, solicita productos y acepta solo la generación más reciente. loadCategories tiene carga y error independientes. dispose invalida respuestas pendientes.
+// Consulta docs/GUIA_APRENDIZAJE_US01_US08.html para sintaxis, recorridos y ejercicios.
+
 import 'package:flutter/foundation.dart';
+
 import '../models/product.dart';
 import '../services/product_repository.dart';
 
@@ -19,14 +23,19 @@ class CatalogController extends ChangeNotifier {
   String? get categoryError => _categoryError;
   bool get loading => _loading;
   bool get categoriesLoading => _categoriesLoading;
+
+  /// Notifica al catálogo solo si el controlador no fue destruido, para evitar reconstrucciones después de dispose.
   void _emit() {
     if (!_disposed) notifyListeners();
   }
 
+  /// Consulta categorías con indicador y error independientes; evita solicitudes simultáneas duplicadas.
   Future<void> loadCategories() async {
     if (_categoriesLoading) return;
     _categoriesLoading = true;
     _categoryError = null;
+
+    /// Notifica al catálogo solo si el controlador no fue destruido, para evitar reconstrucciones después de dispose.
     _emit();
     try {
       _categories = await repository.categories();
@@ -34,10 +43,13 @@ class CatalogController extends ChangeNotifier {
       _categoryError = e.toString();
     } finally {
       _categoriesLoading = false;
+
+      /// Notifica al catálogo solo si el controlador no fue destruido, para evitar reconstrucciones después de dispose.
       _emit();
     }
   }
 
+  /// Recibe categoría opcional; limpia lista, marca carga y acepta solo la respuesta de la generación actual.
   Future<void> load([String? category]) async {
     if (category != null && !_categories.contains(category)) return;
     final generation = ++_generation;
@@ -45,6 +57,8 @@ class CatalogController extends ChangeNotifier {
     _products = const [];
     _error = null;
     _loading = true;
+
+    /// Notifica al catálogo solo si el controlador no fue destruido, para evitar reconstrucciones después de dispose.
     _emit();
     try {
       final result = await repository.products(category);
@@ -54,12 +68,15 @@ class CatalogController extends ChangeNotifier {
     } finally {
       if (!_disposed && generation == _generation) {
         _loading = false;
+
+        /// Notifica al catálogo solo si el controlador no fue destruido, para evitar reconstrucciones después de dispose.
         _emit();
       }
     }
   }
 
   @override
+  /// Libera recursos de esta instancia e invalida sus notificaciones; no debe usarse para iniciar peticiones.
   void dispose() {
     _disposed = true;
     _generation++;

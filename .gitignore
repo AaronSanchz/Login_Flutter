@@ -1,3 +1,4 @@
+# Excluye cachés, builds y configuración local. Estos archivos no deben publicarse ni incluirse en el ZIP.
 build/
 .dart_tool/
 .gradle/
@@ -10,3 +11,8 @@ local.properties
 .flutter-plugins-dependencies
 *.apk
 *.aab
+
+# Carpetas anidadas de compilación y configuración personal.
+**/build/
+work/
+*.log

@@ -1,3 +1,4 @@
+// Configuración de compilación Gradle en sintaxis Kotlin. Conservar las versiones del proyecto; la guía explica SDK, plugins, repositorios y dependencias.
 pluginManagement {
     val flutterSdkPath = run {
         val properties = java.util.Properties()

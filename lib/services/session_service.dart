@@ -1,3 +1,6 @@
+// GUÍA DEL ARCHIVO: Persistencia de token, ID, nombre y rol mediante flutter_secure_storage. saveSession escribe; loadSession recupera o devuelve null; clearSession borra las cuatro claves. El carrito se borra aparte.
+// Consulta docs/GUIA_APRENDIZAJE_US01_US08.html para sintaxis, recorridos y ejercicios.
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/session_data.dart';
@@ -11,6 +14,7 @@ class SessionService {
   static const String _usernameKey = 'session_username';
   static const String _roleKey = 'session_role';
 
+  /// Persiste token, ID, nombre y rol de la sesión; nunca almacena contraseña. Solo se navega después del guardado.
   static Future<void> saveSession(SessionData session) async {
     await _storage.write(key: _tokenKey, value: session.token);
     await _storage.write(key: _userIdKey, value: session.userId.toString());
@@ -18,6 +22,7 @@ class SessionService {
     await _storage.write(key: _roleKey, value: session.role.storageValue);
   }
 
+  /// Lee las cuatro claves seguras; devuelve SessionData solo con datos coherentes, o null si no se puede recuperar.
   static Future<SessionData?> loadSession() async {
     final token = await _storage.read(key: _tokenKey);
     final idText = await _storage.read(key: _userIdKey);
@@ -44,6 +49,7 @@ class SessionService {
     }
 
     if (userId == null || userId <= 0 || role == null) {
+      /// Elimina los datos persistidos de sesión; el llamador debe limpiar además el carrito y el historial visual.
       await clearSession();
       return null;
     }
@@ -56,6 +62,7 @@ class SessionService {
     );
   }
 
+  /// Elimina los datos persistidos de sesión; el llamador debe limpiar además el carrito y el historial visual.
   static Future<void> clearSession() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userIdKey);

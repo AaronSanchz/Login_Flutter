@@ -1,3 +1,4 @@
+# Configura reglas del analizador Dart; no cambia el comportamiento de la aplicación en ejecución.
 analyzer:
   exclude:
     - build/**

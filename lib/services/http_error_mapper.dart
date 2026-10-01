@@ -1,5 +1,9 @@
+// GUÍA DEL ARCHIVO: Traducción de códigos HTTP a mensajes. El parámetro login distingue credenciales incorrectas de errores generales. Este archivo no hace peticiones ni guarda estado.
+// Consulta docs/GUIA_APRENDIZAJE_US01_US08.html para sintaxis, recorridos y ejercicios.
+
 /// Traduce códigos de respuesta HTTP a mensajes visibles y comprobables.
 abstract final class HttpErrorMapper {
+  /// Traduce código HTTP a mensaje visible; login distingue un fallo de credenciales de errores generales.
   static String message(int code, {bool login = false}) {
     if (code == 400 || code == 401) {
       return login

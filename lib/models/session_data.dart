@@ -1,9 +1,8 @@
+// GUÍA DEL ARCHIVO: Tipos de sesión. UserRole contiene los tres perfiles; UserRoleText proporciona etiquetas y valores persistidos. SessionData agrupa token, ID, nombre y rol; no almacena la contraseña.
+// Consulta docs/GUIA_APRENDIZAJE_US01_US08.html para sintaxis, recorridos y ejercicios.
+
 /// Modelo inmutable de sesión y roles de acceso.
-enum UserRole {
-  administrador,
-  auditor,
-  cliente,
-}
+enum UserRole { administrador, auditor, cliente }
 
 extension UserRoleText on UserRole {
   String get label {

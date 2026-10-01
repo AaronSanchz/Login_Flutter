@@ -1,53 +1,33 @@
-# FakeStore Flutter Dart
+# Fake Store Flutter — Actualización US06 a US08
 
-**Versión reestructurada:** consulta [ARQUITECTURA_Y_PRUEBAS.md](ARQUITECTURA_Y_PRUEBAS.md) para la arquitectura y el código actual. La guía HTML incluida documenta la base anterior.
+Esta actualización agrega **US06: agregar producto**, **US07: editar producto** y **US08: eliminar producto**. Conserva la base US01–US05: login, roles locales, sesión segura, cierre de sesión, catálogo, categorías y detalle. El proyecto completo abarca US01–US08; el alcance nuevo de esta entrega es US06–US08.
 
-Proyecto completo de continuación de Fake Store para US03, US04 y US05. Empieza abriendo **docs/GUIA_COMPLETA.html** en un navegador; contiene requisitos, arquitectura, explicación por archivo y código completo numerado.
+## Versiones conservadas
 
+Flutter 3.47.2 · Dart 3.13.2 · Gradle 8.14 · AGP 8.11.1 · Kotlin Android 2.2.20. Java utilizado: Microsoft OpenJDK 21.0.12.1; destino Java/JVM 17. No se actualizaron SDK ni plugins. Flutter mantiene pubspec.lock del ZIP original.
 
-## Abrir y ejecutar Flutter
+## Ejecutar
 
-Extrae el ZIP en una carpeta local. Abre FakeStore_Flutter_Dart en Android Studio o VS Code. Este proyecto incluye el destino Android, como la base recibida; no incluye carpetas iOS, web o escritorio.
-
-Instala Flutter y configura el SDK Android con licencias aceptadas. La entrega se comprobó con Flutter 3.47.2 y Dart 3.13.2. No uses el límite inferior del pubspec como garantía de compatibilidad con SDK antiguos: las dependencias bloqueadas y los widgets usados se comprobaron con esa versión concreta.
+Abre la raíz del proyecto en tu editor. Configura tu SDK Android y JDK; local.properties es personal y no se publica. En Flutter usa el SDK 3.47.2. En Kotlin abre el módulo app en Android Studio y selecciona JDK 21 y SDK 35.
 
 ```powershell
-flutter doctor
 flutter pub get
 flutter analyze --no-pub
 flutter test --no-pub
+flutter build apk --debug
 flutter run
 ```
 
-Para construir un APK de prueba:
+## Reglas de US06–US08
 
-```powershell
-flutter build apk --debug
-```
+Solo Administrador puede crear, editar y eliminar. El repositorio comprueba el rol antes de enviar POST, PUT o DELETE, además de restringir los botones. La creación valida campos, muestra el ID recibido y limpia el formulario. La edición precarga valores, bloquea el guardado mientras espera y actualiza el detalle local. El borrado pide confirmación; Cancelar conserva el detalle sin enviar DELETE y confirmar vuelve al catálogo.
 
-El resultado se crea en build/app/outputs/flutter-apk/app-debug.apk. No está firmado para publicación en una tienda. Flutter prepara android/local.properties con tus rutas locales; no copies las rutas de otra computadora. Selecciona un dispositivo/emulador Android antes de flutter run. Las dependencias y Gradle se descargan la primera vez.
+Fake Store **simula las escrituras y no persiste cambios**. Un producto eliminado puede reaparecer al consultar; la edición se refleja localmente con la respuesta recibida. Los controles de rol son académicos y locales; un backend propio debe validar permisos en servidor.
 
-Configuración Android conservada: AGP 8.11.1, Kotlin 2.2.20, Gradle 8.14 y lenguaje JVM 17. Flutter 3.47.2 advierte que esas versiones requerirán actualización en una versión futura; la advertencia no equivale a un fallo de compilación. El applicationId permanece com.example.fakestoreroles.
+## Roles y prueba
 
-## Cuentas de demostración del proyecto base
+IDs 1 y 2: Administrador; ID 3: Auditor; demás: Cliente. Cuenta pública de ejemplo Administrador: mor_2314 / 83r5^_. No es una credencial privada.
 
-| Perfil | Usuario | Contraseña |
-|---|---|---|
-| Administrador ID 2 | mor_2314 | 83r5^_ |
-| Auditor ID 3 | kevinryan | kev02937@ |
-| Cliente ID 4 | donero | ewedon |
+Flutter: 27 pruebas aprobadas, análisis sin incidencias y APK debug. Kotlin: 22 pruebas aprobadas, APK debug y lint con cero errores y 34 avisos. Emulador Android 35: login/catálogo y creación real con ID 21 en ambas apps; edición y eliminación nativas; modo avión Flutter. Falta reproducir todos los escenarios en teléfono físico.
 
-Son cuentas públicas de ejemplo del código recibido. Su disponibilidad depende del servicio y no se garantiza si cambia la base remota. No se añade un acceso que omita la autenticación cuando la API no está disponible.
-
-## Documentación
-
-- docs/ARQUITECTURA_Y_REQUISITOS.md
-- docs/CODIGO_EXPLICADO.md
-- docs/VERIFICACION.md
-- docs/CAMBIOS_SOBRE_BASE.md
-- docs/historias
-
-Los avisos y límites de Fake Store están descritos en la guía y en las pantallas de gestión.
-# Reestructuración POO US03–US05
-
-Consulta [ARQUITECTURA_Y_PRUEBAS.md](ARQUITECTURA_Y_PRUEBAS.md) para la separación de vistas, controladores, modelos, validaciones y servicios, junto con los botones, permisos, códigos HTTP y pruebas ampliadas.
+El repositorio contiene código comentado, pruebas, configuración y este README. La guía de aprendizaje y el informe detallado se entregan por separado.

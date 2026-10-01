@@ -1,3 +1,6 @@
+// GUÍA DEL ARCHIVO: Coordina validación, autenticación y guardado seguro. ChangeNotifier informa loading y message a LoginScreen; dependencias inyectables permiten probar sin Internet. Una pantalla destruida no debe iniciar un guardado tardío.
+// Consulta docs/GUIA_APRENDIZAJE_US01_US08.html para sintaxis, recorridos y ejercicios.
+
 import 'package:flutter/foundation.dart';
 
 import '../models/session_data.dart';
@@ -9,8 +12,8 @@ class LoginController extends ChangeNotifier {
   LoginController({
     Future<SessionData> Function(String, String)? authenticate,
     Future<void> Function(SessionData)? saveSession,
-  })  : _authenticate = authenticate ?? ApiService().authenticate,
-        _saveSession = saveSession ?? SessionService.saveSession;
+  }) : _authenticate = authenticate ?? ApiService().authenticate,
+       _saveSession = saveSession ?? SessionService.saveSession;
 
   final Future<SessionData> Function(String, String) _authenticate;
   final Future<void> Function(SessionData) _saveSession;
@@ -19,6 +22,7 @@ class LoginController extends ChangeNotifier {
   bool _disposed = false;
 
   /// Devuelve la sesión solo si las credenciales son válidas y quedó guardada.
+  /// Valida textos y evita segundo envío; autentica, guarda sesión y retorna resultado o null con mensaje. loading se restablece en finally.
   Future<SessionData?> submit(String username, String password) async {
     if (loading) return null;
     final user = username.trim();
@@ -37,7 +41,10 @@ class LoginController extends ChangeNotifier {
     notifyListeners();
     try {
       final session = await _authenticate(user, password);
+      // Si se cerró la pantalla durante la petición, no persistir un acceso tardío.
+      if (_disposed) return null;
       await _saveSession(session);
+      if (_disposed) return null;
       return session;
     } on ApiException catch (e) {
       message = e.message;
@@ -52,6 +59,7 @@ class LoginController extends ChangeNotifier {
   }
 
   @override
+  /// Libera recursos de esta instancia e invalida sus notificaciones; no debe usarse para iniciar peticiones.
   void dispose() {
     _disposed = true;
     super.dispose();

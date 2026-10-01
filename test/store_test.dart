@@ -1,7 +1,11 @@
+// PRUEBAS: ejecutan reglas y flujos con dobles de red. No demuestran disponibilidad de la API ni ejecución en un teléfono.
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/services.dart';
+
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -23,15 +27,16 @@ final raw = {
   'description': 'Algodón',
   'category': "men's clothing",
   'image': 'https://example.com/image.png',
-  'rating': {'rate': 4.2, 'count': 9}
+  'rating': {'rate': 4.2, 'count': 9},
 };
 Product product({String title = 'Camisa'}) => Product(
-    id: 1,
-    title: title,
-    price: 19.5,
-    description: 'Algodón',
-    category: "men's clothing",
-    image: '');
+  id: 1,
+  title: title,
+  price: 19.5,
+  description: 'Algodón',
+  category: "men's clothing",
+  image: '',
+);
 SessionData session(UserRole role) =>
     SessionData(token: 'test', userId: 1, username: 'test', role: role);
 
@@ -39,6 +44,7 @@ class FakeRepository implements ProductRepository {
   final pending = <Completer<List<Product>>>[];
   bool failDetail = false;
   @override
+  /// Doble de prueba: products entrega datos controlados; no llama a la API real.
   Future<List<Product>> products([String? category]) {
     final c = Completer<List<Product>>();
     pending.add(c);
@@ -46,22 +52,82 @@ class FakeRepository implements ProductRepository {
   }
 
   @override
+  /// Doble de prueba: categories entrega datos controlados; no llama a la API real.
   Future<List<String>> categories() async => ["men's clothing", 'jewelery'];
   @override
+  /// Doble de prueba: detail entrega datos controlados; no llama a la API real.
   Future<Product> detail(int id) async {
     if (failDetail) throw const StoreException('404');
     return product();
   }
 
   @override
+  /// Doble de prueba: create entrega datos controlados; no llama a la API real.
+  Future<Product> create(Product p, List<String> categories) async => p;
+  @override
+  /// Doble de prueba: update entrega datos controlados; no llama a la API real.
   Future<Product> update(Product p, List<String> categories) async => p;
   @override
+  /// Doble de prueba: delete entrega datos controlados; no llama a la API real.
   Future<void> delete(int id) async {}
   @override
+  /// Doble de prueba sin cliente HTTP que liberar; implementa el contrato close sin trabajo adicional.
   void close() {}
 }
 
+/// Entrada de la suite: registra pruebas y sus aserciones, no ejecuta la app con runApp.
 void main() {
+  test(
+    'US06 bloquea POST sin rol o con datos inválidos y devuelve ID',
+    () async {
+      final calls = <String>[];
+      final client = MockClient((request) async {
+        calls.add(request.method);
+        expect(request.url.path, '/products');
+        expect(jsonDecode(request.body), isNot(contains('id')));
+        return http.Response(jsonEncode(raw), 200);
+      });
+      final denied = HttpProductRepository(
+        client: client,
+        session: () async => session(UserRole.cliente),
+      );
+      final candidate = product().toJson()..remove('id');
+      final newProduct = Product(
+        id: 0,
+        title: candidate['title'] as String,
+        price: candidate['price'] as double,
+        description: candidate['description'] as String,
+        category: candidate['category'] as String,
+        image: 'https://example.com/image.png',
+      );
+      await expectLater(
+        denied.create(newProduct, ["men's clothing"]),
+        throwsA(isA<StoreException>()),
+      );
+      expect(calls, isEmpty);
+      final allowed = HttpProductRepository(
+        client: client,
+        session: () async => session(UserRole.administrador),
+      );
+      await expectLater(
+        allowed.create(
+          Product(
+            id: 0,
+            title: '',
+            price: 19.5,
+            description: 'a',
+            category: "men's clothing",
+            image: 'https://example.com/image.png',
+          ),
+          ["men's clothing"],
+        ),
+        throwsA(isA<StoreException>()),
+      );
+      expect(calls, isEmpty);
+      expect((await allowed.create(newProduct, ["men's clothing"])).id, 1);
+      expect(calls, ['POST']);
+    },
+  );
   test('Errores HTTP conservan código y contexto de acceso', () {
     expect(HttpErrorMapper.message(401, login: true), contains('contraseña'));
     expect(HttpErrorMapper.message(401), contains('acceso'));
@@ -71,14 +137,18 @@ void main() {
   });
   setUpAll(() async {
     final loader = FontLoader('Roboto');
-    loader.addFont(File('test/fonts/roboto-regular.ttf')
-        .readAsBytes()
-        .then(ByteData.sublistView));
+    loader.addFont(
+      File('test/fonts/roboto-regular.ttf')
+          .readAsBytes()
+          .then(ByteData.sublistView),
+    );
     await loader.load();
     final icons = FontLoader('MaterialIcons');
-    icons.addFont(File('test/fonts/materialicons-regular.otf')
-        .readAsBytes()
-        .then(ByteData.sublistView));
+    icons.addFont(
+      File('test/fonts/materialicons-regular.otf')
+          .readAsBytes()
+          .then(ByteData.sublistView),
+    );
     await icons.load();
   });
   test('Controlador de acceso valida límites sin llamar al servicio', () async {
@@ -92,52 +162,66 @@ void main() {
     );
     expect(await controller.submit(' ', 'secreto'), isNull);
     expect(await controller.submit('usuario', ' '), isNull);
-    expect(await controller.submit(List.filled(101, 'u').join(), 'secreto'), isNull);
-    expect(await controller.submit('usuario', List.filled(257, 'x').join()), isNull);
+    expect(
+      await controller.submit(List.filled(101, 'u').join(), 'secreto'),
+      isNull,
+    );
+    expect(
+      await controller.submit('usuario', List.filled(257, 'x').join()),
+      isNull,
+    );
     expect(calls, 0);
     controller.dispose();
   });
 
-  test('Controlador de acceso bloquea dobles envíos y guarda una sesión', () async {
-    final pending = Completer<SessionData>();
-    var calls = 0;
-    var saved = 0;
-    final controller = LoginController(
-      authenticate: (user, password) {
-        expect(user, 'usuario');
-        expect(password, 'clave');
-        calls++;
-        return pending.future;
-      },
-      saveSession: (_) async { saved++; },
-    );
-    final first = controller.submit(' usuario ', 'clave');
-    expect(controller.loading, isTrue);
-    expect(await controller.submit('usuario', 'clave'), isNull);
-    pending.complete(session(UserRole.cliente));
-    expect(await first, isNotNull);
-    expect(calls, 1);
-    expect(saved, 1);
-    expect(controller.loading, isFalse);
-    controller.dispose();
-  });
+  test(
+    'Controlador de acceso bloquea dobles envíos y guarda una sesión',
+    () async {
+      final pending = Completer<SessionData>();
+      var calls = 0;
+      var saved = 0;
+      final controller = LoginController(
+        authenticate: (user, password) {
+          expect(user, 'usuario');
+          expect(password, 'clave');
+          calls++;
+          return pending.future;
+        },
+        saveSession: (_) async {
+          saved++;
+        },
+      );
+      final first = controller.submit(' usuario ', 'clave');
+      expect(controller.loading, isTrue);
+      expect(await controller.submit('usuario', 'clave'), isNull);
+      pending.complete(session(UserRole.cliente));
+      expect(await first, isNotNull);
+      expect(calls, 1);
+      expect(saved, 1);
+      expect(controller.loading, isFalse);
+      controller.dispose();
+    },
+  );
 
-  test('Fallo al guardar sesión no abre la aplicación y permite reintentar', () async {
-    var saves = 0;
-    final controller = LoginController(
-      authenticate: (_, __) async => session(UserRole.auditor),
-      saveSession: (_) async {
-        saves++;
-        if (saves == 1) throw StateError('Almacenamiento no disponible');
-      },
-    );
-    expect(await controller.submit('auditor', 'clave'), isNull);
-    expect(controller.message, isNotEmpty);
-    expect(controller.loading, isFalse);
-    expect(await controller.submit('auditor', 'clave'), isNotNull);
-    expect(saves, 2);
-    controller.dispose();
-  });
+  test(
+    'Fallo al guardar sesión no abre la aplicación y permite reintentar',
+    () async {
+      var saves = 0;
+      final controller = LoginController(
+        authenticate: (_, __) async => session(UserRole.auditor),
+        saveSession: (_) async {
+          saves++;
+          if (saves == 1) throw StateError('Almacenamiento no disponible');
+        },
+      );
+      expect(await controller.submit('auditor', 'clave'), isNull);
+      expect(controller.message, isNotEmpty);
+      expect(controller.loading, isFalse);
+      expect(await controller.submit('auditor', 'clave'), isNotNull);
+      expect(saves, 2);
+      controller.dispose();
+    },
+  );
   test('Mapea todos los campos y rating', () {
     final p = Product.fromJson(raw);
     expect(p.id, 1);
@@ -152,7 +236,7 @@ void main() {
       {'id': 0},
       {'id': 1.2},
       {'price': double.nan},
-      {'price': -1}
+      {'price': -1},
     ]) {
       expect(() => Product.fromJson({...raw, ...patch}), throwsFormatException);
     }
@@ -161,7 +245,7 @@ void main() {
     final p = Product.fromJson({
       ...raw,
       'image': null,
-      'rating': {'rate': 8, 'count': -1}
+      'rating': {'rate': 8, 'count': -1},
     });
     expect(p.image, '');
     expect(p.rating, isNull);
@@ -176,7 +260,7 @@ void main() {
       'Infinity',
       '1000001',
       '1.234',
-      '1e3'
+      '1e3',
     ]) {
       expect(ProductRules.price(text), isNotNull, reason: text);
     }
@@ -186,132 +270,155 @@ void main() {
     expect(ProductRules.image('http://example.com/a'), isNotNull);
     expect(ProductRules.image('https://example.com/a'), isNull);
   });
-  test('HTTP consulta productos, categorías, filtro codificado y detalle',
-      () async {
-    final paths = <String>[];
-    final repo = HttpProductRepository(client: MockClient((request) async {
-      paths.add(request.url.path);
-      final body = request.url.path.endsWith('/categories')
-          ? ["men's clothing"]
-          : request.url.path.endsWith('/1')
+  test(
+    'HTTP consulta productos, categorías, filtro codificado y detalle',
+    () async {
+      final paths = <String>[];
+      final repo = HttpProductRepository(
+        client: MockClient((request) async {
+          paths.add(request.url.path);
+          final body = request.url.path.endsWith('/categories')
+              ? ["men's clothing"]
+              : request.url.path.endsWith('/1')
               ? raw
               : [raw];
-      return http.Response(jsonEncode(body), 200);
-    }));
-    expect((await repo.products()).length, 1);
-    expect(await repo.categories(), ["men's clothing"]);
-    await repo.products("men's clothing");
-    await repo.detail(1);
-    expect(paths, [
-      '/products',
-      '/products/categories',
-      "/products/category/men's%20clothing",
-      '/products/1'
-    ]);
-    repo.close();
-  });
-  test('Errores HTTP, cuerpo vacío, null y JSON inválido se controlan',
-      () async {
-    for (final response in [
-      http.Response('', 200),
-      http.Response('null', 200),
-      http.Response('bad', 200),
-      http.Response('{}', 503),
-      http.Response('{}', 404)
-    ]) {
-      final repo =
-          HttpProductRepository(client: MockClient((_) async => response));
-      await expectLater(repo.products(), throwsA(isA<StoreException>()));
+          return http.Response(jsonEncode(body), 200);
+        }),
+      );
+      expect((await repo.products()).length, 1);
+      expect(await repo.categories(), ["men's clothing"]);
+      await repo.products("men's clothing");
+      await repo.detail(1);
+      expect(paths, [
+        '/products',
+        '/products/categories',
+        "/products/category/men's%20clothing",
+        '/products/1',
+      ]);
       repo.close();
-    }
-  });
+    },
+  );
+  test(
+    'Errores HTTP, cuerpo vacío, null y JSON inválido se controlan',
+    () async {
+      for (final response in [
+        http.Response('', 200),
+        http.Response('null', 200),
+        http.Response('bad', 200),
+        http.Response('{}', 503),
+        http.Response('{}', 404),
+      ]) {
+        final repo = HttpProductRepository(
+          client: MockClient((_) async => response),
+        );
+        await expectLater(repo.products(), throwsA(isA<StoreException>()));
+        repo.close();
+      }
+    },
+  );
   test('La API puede devolver lista vacía sin provocar error', () async {
     final repo = HttpProductRepository(
-        client: MockClient((_) async => http.Response('[]', 200)));
+      client: MockClient((_) async => http.Response('[]', 200)),
+    );
     expect(await repo.products(), isEmpty);
     repo.close();
   });
   test('Rechaza categorías incompletas y detalle con ID diferente', () async {
     final repo = HttpProductRepository(
-        client: MockClient((r) async => http.Response(
-            r.url.path.endsWith('categories')
-                ? '[null]'
-                : jsonEncode({...raw, 'id': 2}),
-            200)));
+      client: MockClient(
+        (r) async => http.Response(
+          r.url.path.endsWith('categories')
+              ? '[null]'
+              : jsonEncode({...raw, 'id': 2}),
+          200,
+        ),
+      ),
+    );
     await expectLater(repo.categories(), throwsA(isA<StoreException>()));
     await expectLater(repo.detail(1), throwsA(isA<StoreException>()));
     repo.close();
   });
-  test('Cliente, Auditor y sesión ausente no ejecutan escrituras HTTP',
-      () async {
-    for (final role in [UserRole.cliente, UserRole.auditor, null]) {
-      var calls = 0;
-      final repo = HttpProductRepository(
+  test(
+    'Cliente, Auditor y sesión ausente no ejecutan escrituras HTTP',
+    () async {
+      for (final role in [UserRole.cliente, UserRole.auditor, null]) {
+        var calls = 0;
+        final repo = HttpProductRepository(
           session: () async => role == null ? null : session(role),
           client: MockClient((_) async {
             calls++;
             return http.Response(jsonEncode(raw), 200);
-          }));
-      await expectLater(repo.update(Product.fromJson(raw), ["men's clothing"]),
-          throwsA(isA<StoreException>()));
-      await expectLater(repo.delete(1), throwsA(isA<StoreException>()));
-      expect(calls, 0);
-      repo.close();
-    }
-  });
+          }),
+        );
+        await expectLater(
+          repo.update(Product.fromJson(raw), ["men's clothing"]),
+          throwsA(isA<StoreException>()),
+        );
+        await expectLater(repo.delete(1), throwsA(isA<StoreException>()));
+        expect(calls, 0);
+        repo.close();
+      }
+    },
+  );
   test('Admin envía PUT y DELETE después de validar', () async {
     final methods = <String>[];
     final repo = HttpProductRepository(
-        session: () async => session(UserRole.administrador),
-        client: MockClient((r) async {
-          methods.add(r.method);
-          if (r.method == 'PUT') expect(jsonDecode(r.body)['title'], 'Camisa');
-          return http.Response(jsonEncode(raw), 200);
-        }));
+      session: () async => session(UserRole.administrador),
+      client: MockClient((r) async {
+        methods.add(r.method);
+        if (r.method == 'PUT') expect(jsonDecode(r.body)['title'], 'Camisa');
+        return http.Response(jsonEncode(raw), 200);
+      }),
+    );
     await repo.update(Product.fromJson(raw), ["men's clothing"]);
     await repo.delete(1);
     expect(methods, ['PUT', 'DELETE']);
     repo.close();
   });
-  test('Cambio de filtro limpia datos y descarta respuestas antiguas',
-      () async {
-    final repo = FakeRepository();
-    final c = CatalogController(repo);
-    await c.loadCategories();
-    final first = c.load();
-    final second = c.load('jewelery');
-    expect(c.products, isEmpty);
-    expect(c.loading, isTrue);
-    repo.pending[1].complete([product(title: 'Último')]);
-    await second;
-    repo.pending[0].complete([product(title: 'Antiguo')]);
-    await first;
-    expect(c.products.single.title, 'Último');
-    expect(c.selected, 'jewelery');
-    expect(c.loading, isFalse);
-    c.dispose();
-  });
-  test('Reintento recupera un error y dispose tolera petición en curso',
-      () async {
-    final repo = FakeRepository();
-    final c = CatalogController(repo);
-    final load = c.load();
-    repo.pending[0].completeError(const StoreException('Sin red'));
-    await load;
-    expect(c.error, 'Sin red');
-    expect(c.loading, isFalse);
-    final retry = c.load();
-    repo.pending[1].complete([product()]);
-    await retry;
-    expect(c.error, isNull);
-    final late = c.load();
-    c.dispose();
-    repo.pending[2].complete([]);
-    await late;
-  });
+  test(
+    'Cambio de filtro limpia datos y descarta respuestas antiguas',
+    () async {
+      final repo = FakeRepository();
+      final c = CatalogController(repo);
+      await c.loadCategories();
+      final first = c.load();
+      final second = c.load('jewelery');
+      expect(c.products, isEmpty);
+      expect(c.loading, isTrue);
+      repo.pending[1].complete([product(title: 'Último')]);
+      await second;
+      repo.pending[0].complete([product(title: 'Antiguo')]);
+      await first;
+      expect(c.products.single.title, 'Último');
+      expect(c.selected, 'jewelery');
+      expect(c.loading, isFalse);
+      c.dispose();
+    },
+  );
+  test(
+    'Reintento recupera un error y dispose tolera petición en curso',
+    () async {
+      final repo = FakeRepository();
+      final c = CatalogController(repo);
+      final load = c.load();
+      repo.pending[0].completeError(const StoreException('Sin red'));
+      await load;
+      expect(c.error, 'Sin red');
+      expect(c.loading, isFalse);
+      final retry = c.load();
+      repo.pending[1].complete([product()]);
+      await retry;
+      expect(c.error, isNull);
+      final late = c.load();
+      c.dispose();
+      repo.pending[2].complete([]);
+      await late;
+    },
+  );
   for (final role in UserRole.values) {
-    testWidgets('Detalle construye acciones según sesión local: ${role.name}',
-        (tester) async {
+    testWidgets('Detalle construye acciones según sesión local: ${role.name}', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(430, 960);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -320,91 +427,120 @@ void main() {
         'session_token': 'test',
         'session_user_id': '1',
         'session_username': 'test',
-        'session_role': role.name
+        'session_role': role.name,
       });
-      await tester.pumpWidget(MaterialApp(
+      await tester.pumpWidget(
+        MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
-              colorScheme:
-                  ColorScheme.fromSeed(seedColor: const Color(0xff12685e)),
-              scaffoldBackgroundColor: const Color(0xfff5f7f6)),
-          home: ProductDetailScreen(id: 1, repository: FakeRepository())));
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xff12685e),
+            ),
+            scaffoldBackgroundColor: const Color(0xfff5f7f6),
+          ),
+          home: ProductDetailScreen(id: 1, repository: FakeRepository()),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Camisa'), findsOneWidget);
       expect(find.text('Algodón'), findsOneWidget);
-      expect(find.text('Editar'),
-          role == UserRole.administrador ? findsOneWidget : findsNothing);
-      expect(find.text('Eliminar'),
-          role == UserRole.administrador ? findsOneWidget : findsNothing);
+      expect(
+        find.text('Editar'),
+        role == UserRole.administrador ? findsOneWidget : findsNothing,
+      );
+      expect(
+        find.text('Eliminar'),
+        role == UserRole.administrador ? findsOneWidget : findsNothing,
+      );
       expect(tester.takeException(), isNull);
       if (role == UserRole.administrador) {
-        await expectLater(find.byType(MaterialApp),
-            matchesGoldenFile('goldens/detail_admin.png'));
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('goldens/detail_admin.png'),
+        );
       }
     });
   }
-  testWidgets('Detalle fallido muestra aviso y regresa automáticamente',
-      (tester) async {
+  testWidgets('Detalle fallido muestra aviso y regresa automáticamente', (
+    tester,
+  ) async {
     FlutterSecureStorage.setMockInitialValues({
       'session_token': 'test',
       'session_user_id': '1',
       'session_username': 'test',
-      'session_role': 'cliente'
+      'session_role': 'cliente',
     });
     final repo = FakeRepository()..failDetail = true;
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(
+      MaterialApp(
         home: Builder(
-            builder: (context) => Scaffold(
-                body: TextButton(
-                    child: const Text('Abrir'),
-                    onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(
-                                id: 1, repository: repo))))))));
+          builder: (context) => Scaffold(
+            body: TextButton(
+              child: const Text('Abrir'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProductDetailScreen(id: 1, repository: repo),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.tap(find.text('Abrir'));
     await tester.pumpAndSettle();
     expect(find.text('Abrir'), findsOneWidget);
     expect(find.text('Producto no disponible'), findsOneWidget);
   });
-  testWidgets('Catálogo dibuja filas, imágenes sustitutas y categorías',
-      (tester) async {
+  testWidgets('Catálogo dibuja filas, imágenes sustitutas y categorías', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(430, 960);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final repo = FakeRepository();
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(
+      MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-            colorScheme:
-                ColorScheme.fromSeed(seedColor: const Color(0xff12685e)),
-            scaffoldBackgroundColor: const Color(0xfff5f7f6)),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff12685e)),
+          scaffoldBackgroundColor: const Color(0xfff5f7f6),
+        ),
         home: CatalogScreen(
-            session: session(UserRole.cliente), repository: repo)));
+          session: session(UserRole.cliente),
+          repository: repo,
+        ),
+      ),
+    );
     repo.pending.single.complete([
       product(title: 'Camisa de algodón'),
       const Product(
-          id: 2,
-          title: 'Mochila para todos los días',
-          price: 49.90,
-          description: 'Ligera',
-          category: "men's clothing",
-          image: ''),
+        id: 2,
+        title: 'Mochila para todos los días',
+        price: 49.90,
+        description: 'Ligera',
+        category: "men's clothing",
+        image: '',
+      ),
       const Product(
-          id: 3,
-          title: 'Anillo de plata',
-          price: 24.50,
-          description: 'Plata',
-          category: 'jewelery',
-          image: '')
+        id: 3,
+        title: 'Anillo de plata',
+        price: 24.50,
+        description: 'Plata',
+        category: 'jewelery',
+        image: '',
+      ),
     ]);
     await tester.pumpAndSettle();
     expect(find.text('Camisa de algodón'), findsOneWidget);
     expect(find.text('Ver todos'), findsOneWidget);
     expect(find.text('Agregar'), findsNWidgets(3));
     expect(tester.takeException(), isNull);
-    await expectLater(find.byType(MaterialApp),
-        matchesGoldenFile('goldens/catalog_client.png'));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/catalog_client.png'),
+    );
   });
 }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Recurso visual Android: IDs conectan estas vistas con Kotlin; dimensiones dp y texto sp respetan densidad y tamaño de fuente. -->
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@android:color/white</item>

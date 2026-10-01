@@ -1,3 +1,4 @@
+# Define nombre, versión, SDK y dependencias Dart/Flutter. Conservar el SDK y pubspec.lock; ejecutar flutter pub get tras cambiar dependencias.
 name: fake_store_roles
 description: Fake Store con sesión, roles, catálogo, categorías y detalle de productos.
 publish_to: "none"
